@@ -274,6 +274,7 @@ body {
     cursor: pointer;
     transition: background-color 0.2s, transform 0.1s;
     margin-top: 4px;
+    text-decoration: none;
 }
 
 .login-button:hover {

