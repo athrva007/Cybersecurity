@@ -5,6 +5,10 @@ const connectDB  = require('./db');
 const userRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
 
+
+const kycRoutes = require('./routes/kyc');
+
+
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
@@ -19,6 +23,7 @@ app.use(express.urlencoded({ extended: false }));
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/users', userRoutes);
 app.use('/api/auth',  authRoutes);
+app.use('/api/kyc',   kycRoutes);
 
 // Health check
 app.get('/', (req, res) => {
@@ -33,8 +38,10 @@ app.use((req, res) => {
 // ─── Global error handler ─────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ success: false, error: 'Internal server error' });
+  res.status(500).json({ success: false, error: err.message });
 });
+
+
 
 // ─── Start server ─────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
