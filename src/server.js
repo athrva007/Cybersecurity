@@ -4,7 +4,7 @@ const cors       = require('cors');
 const connectDB  = require('./db');
 const userRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
-
+const path = require('path');
 
 const kycRoutes = require('./routes/kyc');
 
@@ -25,10 +25,22 @@ app.use('/api/users', userRoutes);
 app.use('/api/auth',  authRoutes);
 app.use('/api/kyc',   kycRoutes);
 
-// Health check
-app.get('/', (req, res) => {
-  res.json({ message: 'API is running' });
+
+
+
+
+
+// Serve frontend files (index.html, styles.css, etc.) from project root
+app.use(express.static(path.join(__dirname, '..')));
+
+// Any non-API route falls back to index.html
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
+
+
+
+
 
 // ─── 404 handler ─────────────────────────────────────────────────────────────
 app.use((req, res) => {
