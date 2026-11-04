@@ -854,7 +854,7 @@
 <script>
   // Use the same protocol and host the page was loaded from
   // so it works on any network without hardcoding
-  const API = `${window.location.protocol}//${window.location.hostname}:5000/api/users`;
+  const API = `/api/users`;
 
   const backdrop   = document.getElementById('modal-backdrop');
   const btnCreate  = document.getElementById('btn-create');
@@ -940,7 +940,7 @@ document.getElementById('btn-login').addEventListener('click', async (e) => {
 
   // 1. Your existing login call
   try {
-    await fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/auth/login`, {
+    await fetch(`/api/auth/login`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ identifier, password }),
@@ -990,7 +990,7 @@ document.getElementById('btn-login').addEventListener('click', async (e) => {
   form.append('consentVersion', 'v1');
 
   try {
-    const res = await fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/kyc/capture`, {
+    const res = await fetch(`/api/kyc/capture`, {
       method: 'POST',
       body: form,
     });
